@@ -38,7 +38,7 @@ async def create_note(note: NoteCreate):
 # Получение всех заметок
 @app.get("/notes/", response_model=List[NoteInDB])
 async def get_notes():
-    query = select([notes])
+    query = select(notes)
     rows = await database.fetch_all(query)
     notes_with_tags = [await enrich_note_with_tags(row) for row in rows]
     return notes_with_tags
@@ -47,7 +47,7 @@ async def get_notes():
 # Получение заметки по ID
 @app.get("/notes/{note_id}", response_model=NoteInDB)
 async def get_note_by_id(note_id: int):
-    query = select([notes]).where(notes.c.id == note_id)
+    query = select(notes).where(notes.c.id == note_id)
     note = await database.fetch_one(query)
     if note is None:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -58,7 +58,7 @@ async def get_note_by_id(note_id: int):
 @app.put("/notes/{note_id}", response_model=NoteInDB)
 async def update_note(note_id: int, note_data: NoteUpdate):
     # Проверка наличия заметки
-    query = select([notes]).where(notes.c.id == note_id)
+    query = select(notes).where(notes.c.id == note_id)
     existing_note = await database.fetch_one(query)
     if existing_note is None:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -93,7 +93,7 @@ async def delete_note(note_id: int):
 
 # Получение или создание тега
 async def get_or_create_tag(tag_name: str):
-    query = select([tags.c.id]).where(tags.c.name == tag_name)
+    query = select(tags.c.id).where(tags.c.name == tag_name)
     tag_id = await database.fetch_one(query)
     if tag_id:
         return tag_id[0]
@@ -103,7 +103,7 @@ async def get_or_create_tag(tag_name: str):
 
 # Обогащение заметки тегами
 async def enrich_note_with_tags(note):
-    query = select([tags.c.name]).select_from(note_tags.join(tags)).where(note_tags.c.note_id == note.id)
+    query = select(tags.c.name).select_from(note_tags.join(tags)).where(note_tags.c.note_id == note.id)
     tag_rows = await database.fetch_all(query)
     tags_list = [tag.name for tag in tag_rows]
     return {**note, "tags": tags_list}
